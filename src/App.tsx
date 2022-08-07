@@ -1,20 +1,21 @@
 import React, {useEffect, useState} from 'react';
 
-import {Divider, Grid, ListItem, TextField, Toolbar, Typography} from "@mui/material";
+import {Divider, Grid, Toolbar, Typography} from "@mui/material";
 import List from '@mui/material/List';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import MessageIcon from '@mui/icons-material/Message';
 import Button from '@mui/material/Button';
 import {Send} from "@mui/icons-material";
 import Thread from "./app/types/Thread";
 import Message from "./app/types/Message";
+import {MessageInput} from "./app/components/MessageInput";
 import {MessageCard} from "./app/components/MessageCard";
 import moment from "moment";
 import {v4 as uuidv4} from 'uuid';
 import EditMode from "./app/types/EditMode";
 import './App.css';
+import {loadMessages} from "./app/loadMessages";
+import {scrollToBottom} from "./app/scrollToBottom";
+import {sortThreads} from "./app/sortThreadList";
+import {ThreadButton} from "./app/components/ThreadButton";
 
 const App = () => {
 
@@ -26,41 +27,13 @@ const App = () => {
     const [editMode, setEditMode] = useState<EditMode>("NEW");
 
     /** 2. Initial data loading **/
-    const loadMessages = () => {
-        fetch('messages.json'
-            , {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                }
-            }
-        )
-            .then((response) => {
-                return response.json();
-            }).then((json) => {
-            const threads: { [index: string]: Thread } = {};
-            json.forEach((thread: { id: string; name: string; last_updated: string; messages: any[]; }) => {
-                threads[thread.id] = new Thread(thread.id, thread.name, thread.last_updated, thread.messages.map((message) => {
-                    return new Message(message.id, message.text, message.last_updated);
-                }));
-            });
+    useEffect(() => {
+        loadMessages().then((threads) => {
             setThreads(threads);
         });
-    }
-
-    useEffect(() => {
-        loadMessages()
     }, [])
 
     /** 3. Functions relating to adding and editing messages **/
-    const scrollToBottom = (node: HTMLElement | null) => {
-        if (node === null) {
-            return;
-        }
-
-        node.scrollTop = node.scrollHeight;
-    }
-
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => setCurrentMessage(event.target.value);
 
     const addEditMessage = () => {
@@ -70,10 +43,6 @@ const App = () => {
 
         switch (editMode) {
             case "NEW":
-                if (!currentMessage) {
-                    return;
-                }
-
                 threads[currentThreadId].messages.push(
                     new Message(uuidv4(), currentMessage, moment().format(), true)
                 );
@@ -132,24 +101,10 @@ const App = () => {
                     <Toolbar/>
                     <Divider/>
                     <List>
-                        {Object.values(threads).sort((a: Thread, b: Thread) => {
-                            if (a.lastUpdated.isAfter(b.lastUpdated)) {
-                                return -1;
-                            } else if (a.lastUpdated.isBefore(b.lastUpdated)) {
-                                return 1;
-                            }
-                            return 0;
-                        }).map((thread, index) => (
-                            <ListItem key={index} disablePadding>
-                                <ListItemButton onClick={() => {
-                                    setCurrentThreadId(thread.id);
-                                }}>
-                                    <ListItemIcon>
-                                        <MessageIcon/>
-                                    </ListItemIcon>
-                                    <ListItemText primary={thread.name} secondary={thread.formattedDate()}/>
-                                </ListItemButton>
-                            </ListItem>
+                        {Object.values(threads).sort(sortThreads).map((thread, index) => (
+                            <ThreadButton key={index} onClick={() => {
+                                setCurrentThreadId(thread.id);
+                            }} thread={thread}/>
                         ))}
                     </List>
                 </Grid>
@@ -171,13 +126,9 @@ const App = () => {
                         </List>
                         <Divider/>
                         <Grid container style={{padding: '20px'}}>
-                            <Grid item xs={11} paddingRight={3}>
-                                <TextField label={currentMessageId ? "Edit your reply" : "Type a reply"}
-                                           fullWidth value={currentMessage}
-                                           onChange={handleChange}
-                                           onKeyUp={addEditMessageOnPressEnter}
-                                           disabled={currentThreadId === null}/>
-                            </Grid>
+                            <MessageInput currentMessageId={currentMessageId} value={currentMessage}
+                                          onChange={handleChange} onKeyUp={addEditMessageOnPressEnter}
+                                          currentThreadId={currentThreadId}/>
                             <Button onClick={addEditMessage}>
                                 <Send/>
                             </Button>
