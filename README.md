@@ -1,6 +1,10 @@
 # Blink Chat
 
-This is a little proof of concept for a chat app
+This is a little proof of concept for a chat app. There are 2 choices in particular that I made which I feel I ought to 
+explain. These are the lack of testing, and also the lack of a state management library like Redux. Both of them came down
+to time and the fact that they were nowhere mentioned in the task brief. Therefore, I felt that it would be a bit of a 
+gotcha to expect a test suite and the use of Redux. Nevertheless, if you were specifically looking for either of those,
+please let me know and I can spend a bit more time on the app and add either/both of them in.
 
 ## To get it going
 
