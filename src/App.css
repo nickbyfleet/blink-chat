@@ -7,7 +7,7 @@ table {
     height: 100vh;
 }
 
-.messageArea {
+#messageArea {
     height: 70vh;
     overflow-y: auto;
 }
